@@ -1,12 +1,22 @@
-FROM ubuntu:20.04 AS deps
+FROM debian:bullseye
+
+ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt update \
-  && export DEBIAN_FRONTEND=noninteractive \
   && apt install -y --no-install-recommends \
+  git \
+  g++ \
+  ca-certificates \
+  libssl-dev \
   libgmp-dev \
   libmpfr-dev \
   libgsl-dev \
-  python3-appdirs \
+  python3-dev \
+  libgsl0-dev \
+  python3-pip \
+  cython3 \
+  python3-numba \
+  python3-cyvcf2 \
   python3-matplotlib \
   python3-pandas \
   python3-pysam \
@@ -14,27 +24,16 @@ RUN apt update \
   python3-setuptools \
   python3-sklearn \
   python3-tqdm \
-  gnuplot-nox \
   && rm -rf /var/lib/apt/lists/*
 
-FROM deps AS builder
+RUN python3 -m pip install msprime
 
-RUN apt update \
-  && apt install -y --no-install-recommends \
-  ca-certificates \
-  cython3 \
-  g++ \
-  git \
-  python3-dev \
-  python3-setuptools-scm
+RUN git clone https://github.com/popgenmethods/ldpop.git ldpop \
+  && pip install ldpop/
 
-COPY ./ /src
-WORKDIR /src
-RUN python3 setup.py install
+RUN git clone https://github.com/popgenmethods/pyrho.git pyrho \
+  && pip install pyrho/
 
-FROM deps
-COPY --from=builder /usr/local/ /usr/local/
-COPY --from=builder /src /src
 WORKDIR /mnt
 
-ENTRYPOINT ["/usr/local/bin/smc++"]
+#ENTRYPOINT ["/usr/local/bin/pyrho"]
